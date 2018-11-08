@@ -3,12 +3,17 @@ Proxy server for ACME DNS challenges written in Go. See the current PR for this 
 
 You have to specificy the proxy will accept requests for with `ACMEPROXY_PROVIDER`. The proxy expects requests for just a single provider (which doesn't have to be supplied by the client). If you want to provide proxies for multiple providers, start multiple instances on different hosts/ports.
 
-`ACMEPROXY_PROVIDER`: provider to proxy requests for
-`ACMEPROXY_HOST`: listen on this host for requests
-`ACMEPROXY_PORT`: listen on this port for requests
+# Usage
+
+You can specify the following options on the commandline when starting acme-proxy:
+- `ACMEPROXY_PROVIDER`: provider to proxy requests for (integrates all lego DNS providers)
+- `ACMEPROXY_HOST`: listen on this host for requests (default: 127.0.0.1)
+- `ACMEPROXY_PORT`: listen on this port for requests (default: 9095)
+
+You need to also specify the relevant options for the provider you've chosen. See the [lego](github.com/xenolf/lego) documentation.
 
 # Example
-You need a version of lego that supports the acme-proxy provider (see my [fork](http://github.com/mdbraber/lego))
+You need a version of lego that supports the acme-proxy provider (see my [fork](github.com/mdbraber/lego))
 
 ## Running the proxy:
 ```
