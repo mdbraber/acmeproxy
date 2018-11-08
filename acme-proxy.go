@@ -5,18 +5,39 @@ import (
 	"net/http"
 	"log"
 	"github.com/xenolf/lego/providers/dns"
+	"github.com/xenolf/lego/platform/config/env"
 	"io/ioutil"
+	"strconv"
 )
 
-
 type Request struct {
-	Provider string `json:"provider"`
 	Action string `json:"action"` // present or cleanup
 	Domain string `json:"domain"`
 	KeyAuth string `json:"keyauth"`
 }
 
+type Config struct {
+	Host string
+	Port int
+	Provider string
+}
+
+func NewDefaultConfig() *Config {
+	return &Config{
+		Host: env.GetOrDefaultString("ACMEPROXY_HOST","127.0.0.1"),
+		Port: env.GetOrDefaultInt("ACMEPROXY_PORT", 9095),
+	}
+}
+
 func main() {
+
+	values, err := env.Get("ACMEPROXY_PROVIDER")
+	if err != nil {
+		panic(err)
+	}
+
+	config := NewDefaultConfig()
+	config.Provider = values["ACMEPROXY_PROVIDER"]
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		req := &Request{}
@@ -28,7 +49,7 @@ func main() {
 				w.Write([]byte("500 - Internal Server Error: malformed JSON"))
 			} else {
 				// execute action
-				provider, err := dns.NewDNSChallengeProviderByName(req.Provider)
+				provider, err := dns.NewDNSChallengeProviderByName(config.Provider)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					w.Write([]byte("500 - Internal Server Error: " + err.Error()))
@@ -59,6 +80,6 @@ func main() {
 		}
 	})
 
-	log.Fatal(http.ListenAndServe("127.0.0.1:9095", nil))
+	log.Fatal(http.ListenAndServe(config.Host+":"+strconv.Itoa(config.Port), nil))
 
 }
