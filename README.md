@@ -23,7 +23,7 @@ mdbraber-mbp:acme-proxy mdbraber$ ACMEPROXY_PROVIDER="transip" TRANSIP_ACCOUNT_N
 ## Requesting a certificate:
 
 ```
-mdbraber-mbp:lego mdbraber$ ACMEPROXY_URL="http://127.0.0.1:9095/" ./lego -m m@mdbraber.com -a -x http-01 -x tls-alpn-01 --dns acme-proxy --dns-resolvers ns0.transip.nl -s https://acme-staging-v02.api.letsencrypt.org/directory -d mdbraber.net -d *.mdbraber.net run
+mdbraber-mbp:lego mdbraber$ ACMEPROXY_URL="http://127.0.0.1:9095" ./lego -m m@mdbraber.com -a -x http-01 -x tls-alpn-01 --dns acme-proxy --dns-resolvers ns0.transip.nl -s https://acme-staging-v02.api.letsencrypt.org/directory -d mdbraber.net -d *.mdbraber.net run
 2018/11/08 10:11:38 [INFO] acme: Registering account for m@mdbraber.com
 2018/11/08 10:11:38 !!!! HEADS UP !!!!
 2018/11/08 10:11:38
