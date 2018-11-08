@@ -2,35 +2,35 @@ package main
 
 import (
 	"encoding/json"
-	"net/http"
 	"log"
-	"github.com/xenolf/lego/providers/dns"
-	"github.com/xenolf/lego/platform/config/env"
-	"io/ioutil"
+	"net"
+	"net/http"
 	"strconv"
+
+	"github.com/xenolf/lego/platform/config/env"
+	"github.com/xenolf/lego/providers/dns"
 )
 
-type Request struct {
-	Action string `json:"action"` // present or cleanup
-	Domain string `json:"domain"`
-	KeyAuth string `json:"keyauth"`
+type Message struct {
+	Domain  string `json:"domain"`
+	Token   string `json:"token"`
+	KeyAuth string `json:"keyAuth"`
 }
 
 type Config struct {
-	Host string
-	Port int
+	Host     string
+	Port     int
 	Provider string
 }
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		Host: env.GetOrDefaultString("ACMEPROXY_HOST","127.0.0.1"),
+		Host: env.GetOrDefaultString("ACMEPROXY_HOST", "127.0.0.1"),
 		Port: env.GetOrDefaultInt("ACMEPROXY_PORT", 9095),
 	}
 }
 
 func main() {
-
 	values, err := env.Get("ACMEPROXY_PROVIDER")
 	if err != nil {
 		panic(err)
@@ -39,50 +39,59 @@ func main() {
 	config := NewDefaultConfig()
 	config.Provider = values["ACMEPROXY_PROVIDER"]
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		req := &Request{}
-		bdata, _ := ioutil.ReadAll(r.Body)
-		if bdata != nil && len(bdata) > 0 {
-			err := json.Unmarshal(bdata, &req)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte("500 - Internal Server Error: malformed JSON"))
-			} else {
-				// execute action
-				provider, err := dns.NewDNSChallengeProviderByName(config.Provider)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte("500 - Internal Server Error: " + err.Error()))
-				} else {
-					switch req.Action {
-						case "cleanup":
-							err := provider.CleanUp(req.Domain, "", req.KeyAuth)
-							if err != nil {
-								w.WriteHeader(http.StatusInternalServerError)
-								w.Write([]byte("500 - Internal Server Error: " + err.Error()))
-							} else {
-								w.WriteHeader(http.StatusOK)
-							}
-						case "present":
-							err := provider.Present(req.Domain, "", req.KeyAuth)
-							if err != nil {
-								w.WriteHeader(http.StatusInternalServerError)
-								w.Write([]byte("500 - Internal Server Error: " + err.Error()))
-							} else {
-								w.WriteHeader(http.StatusOK)
-							}
-						default:
-							w.WriteHeader(http.StatusInternalServerError)
-							w.Write([]byte("500 - Internal Server Error: no correct action found"))
-					}
-				}
-			}
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("500 - Internal Server Error: no JSON data found"))
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/present", func(rw http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodPost {
+			http.Error(rw, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
+
+		msg := &Message{}
+		err := json.NewDecoder(req.Body).Decode(msg)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		provider, err := dns.NewDNSChallengeProviderByName(config.Provider)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		err = provider.Present(msg.Domain, msg.Token, msg.KeyAuth)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	})
 
-	log.Fatal(http.ListenAndServe(config.Host+":"+strconv.Itoa(config.Port), nil))
+	mux.HandleFunc("/cleanup", func(rw http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodPost {
+			http.Error(rw, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
 
+		msg := &Message{}
+		err := json.NewDecoder(req.Body).Decode(msg)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		provider, err := dns.NewDNSChallengeProviderByName(config.Provider)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		err = provider.CleanUp(msg.Domain, msg.Token, msg.KeyAuth)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+
+	log.Fatal(http.ListenAndServe(net.JoinHostPort(config.Host, strconv.Itoa(config.Port)), mux))
 }
