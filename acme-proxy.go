@@ -60,18 +60,21 @@ func main() {
 							if err != nil {
 								w.WriteHeader(http.StatusInternalServerError)
 								w.Write([]byte("500 - Internal Server Error: " + err.Error()))
+							} else {
+								w.WriteHeader(http.StatusOK)
 							}
 						case "present":
 							err := provider.Present(req.Domain, "", req.KeyAuth)
 							if err != nil {
 								w.WriteHeader(http.StatusInternalServerError)
 								w.Write([]byte("500 - Internal Server Error: " + err.Error()))
+							} else {
+								w.WriteHeader(http.StatusOK)
 							}
 						default:
 							w.WriteHeader(http.StatusInternalServerError)
 							w.Write([]byte("500 - Internal Server Error: no correct action found"))
 					}
-					w.WriteHeader(http.StatusOK)
 				}
 			}
 		} else {
