@@ -50,7 +50,7 @@ ssl.manual.key-file: "/etc/lego/certificates/acmeproxy.example.com.key"
 ssl.auto.agreed: true
 #ssl.auto.ca: "https://acme-v02.api.letsencrypt.org/directory"
 ssl.auto.ca: "https://acme-staging-v02.api.letsencrypt.org/directory"
-ssl.auto.email: "m@mdbraber.com"
+ssl.auto.email: "johndoe@example.com"
 ssl.auto.key-type: "rsa2048"
 ssl.auto.path: "/etc/acmeproxy/certmagic"
 ssl.auto.provider: "transip"
