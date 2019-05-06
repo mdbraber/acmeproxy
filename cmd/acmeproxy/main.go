@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -18,17 +19,36 @@ var (
 )
 
 func main() {
-	cli.HelpFlag = cli.BoolFlag{
-		Name:  "help, h",
-		Usage: "Show help",
-	}
-
 	app := cli.NewApp()
 	app.Name = "acmeproxy"
 	app.HelpName = "acmeproxy"
 	app.Usage = "Proxy server for ACME DNS challenges"
-	app.HideHelp = true
 	app.Action = cmd.Run
+
+	app.CustomAppHelpTemplate = `
+NAME:
+   {{.Name}}{{if .Usage}} - {{.Usage}}{{end}}
+
+USAGE:
+   {{if .UsageText}}{{.UsageText}}{{else}}{{.HelpName}} {{if .VisibleFlags}}[global options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{end}}{{if .Version}}{{if not .HideVersion}}
+
+VERSION:
+   {{.Version}}{{end}}{{end}}{{if .Description}}
+
+DESCRIPTION:
+   {{.Description}}{{end}}{{if len .Authors}}
+
+AUTHOR{{with $length := len .Authors}}{{if ne 1 $length}}S{{end}}{{end}}:
+   {{range $index, $author := .Authors}}{{if $index}}
+   {{end}}{{$author}}{{end}}{{end}}{{if .VisibleCommands}}
+
+OPTIONS:
+   {{range $index, $option := .VisibleFlags}}{{if $index}}
+   {{end}}{{$option}}{{end}}{{end}}{{if .Copyright}}
+
+COPYRIGHT:
+   {{.Copyright}}{{end}}
+`
 
 	app.Version = version
 	cli.VersionPrinter = func(c *cli.Context) {
@@ -36,9 +56,11 @@ func main() {
 	}
 
 	defaultPath := ""
-	cwd, err := os.Getwd()
+	usr, err := user.Current()
 	if err == nil {
-		defaultPath = filepath.Join(cwd, ".acmeproxy")
+		defaultPath = filepath.Join(usr.HomeDir, ".acmeproxy")
+	} else {
+		defaultPath = "/etc/acmeproxy"
 	}
 
 	flags := cmd.CreateFlags(defaultPath)

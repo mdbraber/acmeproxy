@@ -14,53 +14,90 @@ Acmeproxy was written to be run within an internal network, it's not recommended
 ## Background
 See the discussions for this idea in lego [here](https://github.com/xenolf/lego/pull/708)
 
-# Usage
+# Build
+Use the makefile to `make` the executables. Use `make install` to also install the executable to `/usr/local/bin`.
+
+# Configuration
+
+## Adjust configuration file
+Copy `config.yml` to a directory (default: `/etc/acmeproxy`). See below for a configuration example using the `transip` provider. You need to specify the relevant environment variables for the provider you've chose. See the [lego](https://github.com/xenolf/lego) documentation for options per provider. Also see the examples below. If you want to provide proxies for multiple providers, start multiple instances on different hosts/ports (using different config files).
+
+```
+# Environment variables to be used with this provider
+environment:
+ - "TRANSIP_ACCOUNT_NAME=example"
+ - "TRANSIP_PRIVATE_KEY_PATH=/etc/acmeproxy/transip.key"
+ - "TRANSIP_POLLING_INTERVAL=30"
+ - "TRANSIP_PROPAGATION_TIMEOUT=600"
+
+# General settings
+interface: "acmeproxy.example.com"
+port: 9096
+provider: "transip"
+htpasswd-file: "/etc/acmeproxy/htpasswd"
+accesslog-file: "/var/log/acmeproxy.log"
+log-level: debug
+log-timestamp: true
+allowed-domains:
+ - "example.com"
+ - "example.net"
+ - "anotherexample.net"
+
+# Settings for the acmeproxy SSL certificate (used with this interface)
+ssl: manual
+ssl.manual.cert-file: "/etc/lego/certificates/acmeproxy.example.com.crt"
+ssl.manual.key-file: "/etc/lego/certificates/acmeproxy.example.com.key"
+ssl.auto.agreed: true
+#ssl.auto.ca: "https://acme-v02.api.letsencrypt.org/directory"
+ssl.auto.ca: "https://acme-staging-v02.api.letsencrypt.org/directory"
+ssl.auto.email: "m@mdbraber.com"
+ssl.auto.key-type: "rsa2048"
+ssl.auto.path: "/etc/acmeproxy/certmagic"
+ssl.auto.provider: "transip"
+```
 
 ## Creating username/password file
 Use the following command: `htpasswd -c /etc/acmeproxy/htpasswd testuser` to create a new htpasswd file with user `testuser`.
 
-## Using acmeproxy 
-You can use the following environment variables on the commandline when starting acme-proxy:
+# Usage
 
+## Running acmeproxy in the foreground
+If you've configured acmeproxy via the config file, you can just run `acmeproxy`. It will run in the foreground.
 
+## Daemon mode
+If you want to use acmeproxy as a daemon (in the background) use the supplied `acmeproxy.service` for systemd and copy it to `/etc/systemd//systemd` and enable it by `systemctl enable acmeproxy.service`. Be sure to check the `ExecStart` variable to see if it points to the right executable (`/usr/local/bin/acmeproxy` by default).
 
-
-You need to also specify the relevant options for the provider you've chosen with `ACMEPROXY_PROVIDER`. See the [lego](https://github.com/xenolf/lego) documentation for options per provider. Also see the examples below. If you want to provide proxies for multiple providers, start multiple instances on different hosts/ports.
-
-
-## Optional flags
-Acmeproxy only has a single command line flag:
-- `-nodatetime`: Omit date/time from logging (e.g. for use with systemd where stdout output is sent to syslog)
-
-# Examples
-You need a version of lego that supports the acme-proxy provider (see my [fork](https://github.com/mdbraber/lego))
-
-## Running the proxy:
-```
-mdbraber-mbp:acme-proxy mdbraber$ ACMEPROXY_PROVIDER="transip" TRANSIP_ACCOUNT_NAME="mdbraber" TRANSIP_PRIVATE_KEY_PATH="/Users/mdbraber/transip.key" go run acme-proxy.go
-```
-
-## Requesting a certificate
-The example below is using [lego](https://github.com/xenolf/lego) to request a certificate using the [httpreq](https://github.com/xenolf/lego/tree/master/providers/dns/httpreq) plugin (built to connect with a specific API endpoint like acmeproxy. 
+## Options
 
 ```
-mdbraber-mbp:lego mdbraber$ HTTPREQ_USERNAME="test" HTTPREQ_PASSWORD="test" HTTPREQ_ENDPOINT="http://acmeproxy.mdbraber.net:9095/" HTTPREQ_PROPAGATION_TIMEOUT=600 ./lego -m m@mdbraber.com -a -x http-01 -x tls-alpn-01 --dns httpreq --dns-resolvers ns0.transip.nl -s https://acme-staging-v02.api.letsencrypt.org/directory -d mdbraber.net -d *.mdbraber.net run
-2018/11/08 10:11:38 [INFO] [mdbraber.net, *.mdbraber.net] acme: Obtaining bundled SAN certificate
-2018/11/08 10:11:39 [INFO] [*.mdbraber.net] AuthURL: https://acme-staging-v02.api.letsencrypt.org/acme/authz/lBFxlzA3lbOJ8a7cAmIv-vP-Qe1OU4ZSR_q4tmD5Af4
-2018/11/08 10:11:39 [INFO] [mdbraber.net] AuthURL: https://acme-staging-v02.api.letsencrypt.org/acme/authz/RY19RDOYqi2UbTBqmU5FmU1ZVx5FT7kP1xsO5dkodIc
-2018/11/08 10:11:39 [INFO] [mdbraber.net] acme: Could not find solver for: tls-alpn-01
-2018/11/08 10:11:39 [INFO] [mdbraber.net] acme: Could not find solver for: http-01
-2018/11/08 10:11:39 [INFO] [mdbraber.net] acme: Preparing to solve DNS-01
-2018/11/08 10:11:41 [INFO] [mdbraber.net] acme: Preparing to solve DNS-01
-2018/11/08 10:11:43 [INFO] [mdbraber.net] acme: Trying to solve DNS-01
-2018/11/08 10:11:43 [INFO] [mdbraber.net] Checking DNS record propagation using [ns0.transip.nl:53]
-2018/11/08 10:11:43 [INFO] Wait [timeout: 10m0s, interval: 10s]
-2018/11/08 10:14:34 [INFO] [mdbraber.net] The server validated our request
-2018/11/08 10:14:34 [INFO] [mdbraber.net] acme: Trying to solve DNS-01
-2018/11/08 10:14:34 [INFO] [mdbraber.net] Checking DNS record propagation using [ns0.transip.nl:53]
-2018/11/08 10:14:34 [INFO] Wait [timeout: 10m0s, interval: 10s]
-2018/11/08 10:14:40 [INFO] [mdbraber.net] The server validated our request
-2018/11/08 10:14:42 [INFO] [mdbraber.net, *.mdbraber.net] acme: Validations succeeded; requesting certificates
-2018/11/08 10:14:44 [INFO] [mdbraber.net] Server responded with a certificate.
-```
+NAME:
+   acmeproxy - Proxy server for ACME DNS challenges
 
+USAGE:
+   acmeproxy [global options] [arguments...]
+
+VERSION:
+   dev
+
+GLOBAL OPTIONS:
+   --accesslog-file FILE        Location of additional accesslog FILE
+   --allowed-domains value      Set the allowed domain(s) that certificates can be requested for.
+   --config-file FILE           Load configuration from FILE (default: "/etc/acmeproxy/config.yml")
+   --htpasswd-file FILE         Htpassword file FILE for username/password authentication (default: "/root/.acmeproxy/htpasswd")
+   --interface value            Interface (ip or host) to bind for requests
+   --log-level LEVEL            Log LEVEL (trace|debug|info|warn|error|fatal|panic) (default: "info")
+   --log-timestamp              Output date/time on standard output log
+   --port value                 Port to bind for requests (default: 9095)
+   --provider value             DNS challenge provider - see https://github.com/xenolf/lego for options, also set relevant environment variables!
+   --ssl value                  Provide a HTTPS connection when listening to interface:port (supported: auto or manual)
+   --ssl.auto.agreed            Read and agree to your CA's legal documents
+   --ssl.auto.ca value          Certmagic CA endpoint (default: "https://acme-v02.api.letsencrypt.org/directory")
+   --ssl.auto.email value       Provide an e-mail address to be linked to your certificates (defaults to $EMAIL)
+   --ssl.auto.key-type value    Key type to use for private keys. Supported: rsa2048, rsa4096, rsa8192, ec256, ec384. (default: "rsa2048")
+   --ssl.auto.path PATH         PATH to store certmagic information (default: "/root/.acmeproxy/certmagic")
+   --ssl.auto.provider value    Certmagic DNS provider (defaults to --provider/-p)
+   --ssl.manual.cert-file FILE  Location of certificate FILE (when using --ssl/-s)
+   --ssl.manual.key-file FILE   Location of key FILE (when using --ssl/-s)
+   --help, -h                   show help
+   --version, -v                print the version
+```
