@@ -31,3 +31,5 @@ checks:
 fmt:
 	gofmt -s -l -w $(SRCS)
 
+install: build
+	cp dist/acmeproxy /usr/local/bin
