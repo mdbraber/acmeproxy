@@ -3,5 +3,6 @@
 .local
 .gitcookies
 .idea
+cover.out
 dist/
 builds/
