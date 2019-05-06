@@ -1,0 +1,7 @@
+*.swp
+.lego
+.local
+.gitcookies
+.idea
+dist/
+builds/
