@@ -186,7 +186,23 @@ func ActionHandler(action string, config *Config) http.Handler {
 					"provider": config.ProviderName,
 					"mode":     mode,
 				}).Debug("Provider supports requested mode")
-				err = provider.CreateRecord(incoming.FQDN, incoming.Value)
+
+				if action == ActionPresent {
+					err = provider.CreateRecord(incoming.FQDN, incoming.Value)
+				} else if action == ActionCleanup {
+					err = provider.RemoveRecord(incoming.FQDN, incoming.Value)
+				} else {
+					alog.WithFields(log.Fields{
+						"provider": config.ProviderName,
+						"fqdn":     incoming.FQDN,
+						"value":    incoming.Value,
+						"mode":     mode,
+						"error":    err.Error(),
+					}).Error("Wrong action specified")
+					http.Error(w, "Wrong action specified", http.StatusInternalServerError)
+					return
+				}
+
 				if err != nil {
 					alog.WithFields(log.Fields{
 						"provider": config.ProviderName,
