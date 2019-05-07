@@ -52,6 +52,14 @@ func CreateFlags(defaultPath string) []cli.Flag {
 			Name:  "log-timestamp",
 			Usage: "Output date/time on standard output log",
 		}),
+		altsrc.NewBoolFlag(cli.BoolFlag{
+			Name:  "log-forcecolors",
+			Usage: "Force colors on output, even when there is no TTY",
+		}),
+		altsrc.NewBoolFlag(cli.BoolFlag{
+			Name:  "log-forceformatting",
+			Usage: "Force formatting on output, even when there is no TTY",
+		}),
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "ssl",
 			Usage: "Provide a HTTPS connection when listening to interface:port (supported: auto or manual)",

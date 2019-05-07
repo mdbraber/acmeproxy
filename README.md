@@ -36,6 +36,8 @@ port: 9096
 provider: "transip"
 htpasswd-file: "/etc/acmeproxy/htpasswd"
 accesslog-file: "/var/log/acmeproxy.log"
+log-forcecolors: true
+log-forceformatting: true
 log-level: debug
 log-timestamp: true
 allowed-domains:
@@ -65,7 +67,7 @@ Use the following command: `htpasswd -c /etc/acmeproxy/htpasswd testuser` to cre
 If you've configured acmeproxy via the config file, you can just run `acmeproxy`. It will run in the foreground.
 
 ## Daemon mode
-If you want to use acmeproxy as a daemon (in the background) use the supplied `acmeproxy.service` for systemd and copy it to `/etc/systemd//systemd` and enable it by `systemctl enable acmeproxy.service`. Be sure to check the `ExecStart` variable to see if it points to the right executable (`/usr/local/bin/acmeproxy` by default).
+If you want to use acmeproxy as a daemon (in the background) use the supplied `acmeproxy.service` for systemd and copy it to `/etc/systemd/systemd` and enable it by `systemctl enable acmeproxy.service`. Be sure to check the `ExecStart` variable to see if it points to the right executable (`/usr/local/bin/acmeproxy` by default).
 
 ## Options
 
@@ -86,6 +88,8 @@ GLOBAL OPTIONS:
    --htpasswd-file FILE         Htpassword file FILE for username/password authentication (default: "/root/.acmeproxy/htpasswd")
    --interface value            Interface (ip or host) to bind for requests
    --log-level LEVEL            Log LEVEL (trace|debug|info|warn|error|fatal|panic) (default: "info")
+   --log-forcecolors            Force colors on output, even when there is no TTY
+   --log-forceformatting        Force formatting on output, even when there is no TTY
    --log-timestamp              Output date/time on standard output log
    --port value                 Port to bind for requests (default: 9095)
    --provider value             DNS challenge provider - see https://github.com/xenolf/lego for options, also set relevant environment variables!
@@ -101,3 +105,7 @@ GLOBAL OPTIONS:
    --help, -h                   show help
    --version, -v                print the version
 ```
+
+# Tips
+
+If you run acmeproxy through systemd and use `log-forcecolors: true` and `log-forceformatting: true` - you can use `journalctl -xe -o cat -u acmeproxy.service` to see the original colored output with timestamps

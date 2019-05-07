@@ -95,6 +95,14 @@ func setupLogging(ctx *cli.Context) {
 		tf.DisableTimestamp = true
 	}
 
+	if ctx.GlobalBool("log-forcecolors") {
+		tf.ForceColors = true
+	}
+
+	if ctx.GlobalBool("log-forceformatting") {
+		tf.ForceFormatting = true
+	}
+
 	log.SetFormatter(tf)
 
 	level, err := log.ParseLevel(ctx.GlobalString("log-level"))
@@ -162,7 +170,7 @@ func newHttpServer(ctx *cli.Context) *http.Server {
 
 		magicErr := magic.Manage([]string{ctx.GlobalString("interface")})
 		if magicErr != nil {
-			salog.WithField("error", err.Error()).Fatal("Problem setting up certificates for ssl.auto")
+			salog.WithField("error", magicErr.Error()).Fatal("Problem setting up certificates for ssl.auto")
 		}
 		server.TLSConfig = magic.TLSConfig()
 	default:
