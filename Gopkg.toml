@@ -31,7 +31,7 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/xenolf/lego"
+  name = "github.com/go-acme/lego"
 
 [[constraint]]
   branch = "master"

@@ -27,7 +27,7 @@ func CreateFlags(defaultPath string) []cli.Flag {
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "provider",
 			Value: "",
-			Usage: "DNS challenge provider - see https://github.com/xenolf/lego for options, also set relevant environment variables!",
+			Usage: "DNS challenge provider - see https://github.com/go-acme/lego for options, also set relevant environment variables!",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "htpasswd-file",
@@ -37,6 +37,10 @@ func CreateFlags(defaultPath string) []cli.Flag {
 		altsrc.NewStringSliceFlag(cli.StringSliceFlag{
 			Name:  "allowed-domains",
 			Usage: "Set the allowed domain(s) that certificates can be requested for.",
+		}),
+		altsrc.NewStringSliceFlag(cli.StringSliceFlag{
+			Name:  "allowed-ips",
+			Usage: "Set the allowed IP(s) that can request certificates (CIDR notation possible, see https://github.com/jpillora/ipfilter)",
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "accesslog-file",

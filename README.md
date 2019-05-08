@@ -1,5 +1,5 @@
 # acmeproxy
-Proxy server for ACME DNS challenges written in Go. Works with the [httpreq](https://github.com/xenolf/lego/tree/master/providers/dns/httpreq) DNS challenge provider in [lego](https://github.com/xenolf/lego).
+Proxy server for ACME DNS challenges written in Go. Works with the [httpreq](https://github.com/go-acme/lego/tree/master/providers/dns/httpreq) DNS challenge provider in [lego](https://github.com/go-acme/lego).
 
 ## Why?
 Acmeproxy was written to provide a way make it easier and safer to automatically issue per-host [Let's Encrypt](https://letsencrypt.org) SSL certificates inside a larger network with many different hosts. Especially when these hosts aren't accessible from the outside, so need to use the DNS challenges and therefore DNS API access. The regular approach would be to run an ACME client on every host, which would also mean giving each hosts access to the (full) DNS API. This is both hard to manage and a potential security risk.
@@ -12,7 +12,7 @@ As a solution Acmeproxy provides the following:
 Acmeproxy was written to be run within an internal network, it's not recommended to expose your Acmeproxy host to the outside world. Do so at your own risk.
 
 ## Background
-See the discussions for this idea in lego [here](https://github.com/xenolf/lego/pull/708)
+See the discussions for this idea in lego [here](https://github.com/go-acme/lego/pull/708)
 
 # Build
 Use the makefile to `make` the executables. Use `make install` to also install the executable to `/usr/local/bin`.
@@ -20,7 +20,7 @@ Use the makefile to `make` the executables. Use `make install` to also install t
 # Configuration
 
 ## Adjust configuration file
-Copy `config.yml` to a directory (default: `/etc/acmeproxy`). See below for a configuration example using the `transip` provider. You need to specify the relevant environment variables for the provider you've chose. See the [lego](https://github.com/xenolf/lego) documentation for options per provider. Also see the examples below. If you want to provide proxies for multiple providers, start multiple instances on different hosts/ports (using different config files).
+Copy `config.yml` to a directory (default: `/etc/acmeproxy`). See below for a configuration example using the `transip` provider. You need to specify the relevant environment variables for the provider you've chose. See the [lego](https://github.com/go-acme/lego) documentation for options per provider. Also see the examples below. If you want to provide proxies for multiple providers, start multiple instances on different hosts/ports (using different config files).
 
 ```
 # Environment variables to be used with this provider
@@ -44,6 +44,9 @@ allowed-domains:
  - "example.com"
  - "example.net"
  - "anotherexample.net"
+allowed-ips:
+ - 127.0.0.1
+ - 172.0.0/16
 
 # Settings for the acmeproxy SSL certificate (used with this interface)
 ssl: manual
@@ -84,6 +87,7 @@ VERSION:
 GLOBAL OPTIONS:
    --accesslog-file FILE        Location of additional accesslog FILE
    --allowed-domains value      Set the allowed domain(s) that certificates can be requested for.
+   --allowed-ips value          Set the allowed IP(s) that can request certificates (CIDR notation possible, see https://github.com/jpillora/ipfilter)
    --config-file FILE           Load configuration from FILE (default: "/etc/acmeproxy/config.yml")
    --htpasswd-file FILE         Htpassword file FILE for username/password authentication (default: "/root/.acmeproxy/htpasswd")
    --interface value            Interface (ip or host) to bind for requests
@@ -92,7 +96,7 @@ GLOBAL OPTIONS:
    --log-forceformatting        Force formatting on output, even when there is no TTY
    --log-timestamp              Output date/time on standard output log
    --port value                 Port to bind for requests (default: 9095)
-   --provider value             DNS challenge provider - see https://github.com/xenolf/lego for options, also set relevant environment variables!
+   --provider value             DNS challenge provider - see https://github.com/go-acme/lego for options, also set relevant environment variables!
    --ssl value                  Provide a HTTPS connection when listening to interface:port (supported: auto or manual)
    --ssl.auto.agreed            Read and agree to your CA's legal documents
    --ssl.auto.ca value          Certmagic CA endpoint (default: "https://acme-v02.api.letsencrypt.org/directory")

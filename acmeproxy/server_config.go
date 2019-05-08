@@ -3,7 +3,7 @@ package acmeproxy
 import (
 	"net/http"
 
-	"github.com/xenolf/lego/challenge"
+	"github.com/go-acme/lego/challenge"
 )
 
 type Config struct {
@@ -11,6 +11,7 @@ type Config struct {
 	Provider       challenge.Provider
 	ProviderName   string
 	HtpasswdFile   string
+	AllowedIPs     []string
 	AllowedDomains []string
 	AccesslogFile  string
 }

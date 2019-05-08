@@ -14,9 +14,9 @@ import (
 	aplog "github.com/mdbraber/acmeproxy/log"
 	"github.com/mholt/certmagic"
 	log "github.com/sirupsen/logrus"
-	"github.com/xenolf/lego/certcrypto"
-	xlog "github.com/xenolf/lego/log"
-	"github.com/xenolf/lego/providers/dns"
+	"github.com/go-acme/lego/certcrypto"
+	xlog "github.com/go-acme/lego/log"
+	"github.com/go-acme/lego/providers/dns"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -72,6 +72,7 @@ func getConfig(ctx *cli.Context) *acmeproxy.Config {
 	config := acmeproxy.NewDefaultConfig()
 	config.Provider = provider
 	config.ProviderName = ctx.GlobalString("provider")
+	config.AllowedIPs = ctx.GlobalStringSlice("allowed-ips")
 	config.AllowedDomains = ctx.GlobalStringSlice("allowed-domains")
 	config.HtpasswdFile = ctx.GlobalString("htpasswd-file")
 	config.AccesslogFile = ctx.GlobalString("accesslog-file")
@@ -156,15 +157,26 @@ func newHttpServer(ctx *cli.Context) *http.Server {
 		}
 
 		// FIXME check for errors with FileStorage?
-		certmagic.DefaultStorage = &certmagic.FileStorage{Path: ctx.GlobalString("ssl.auto.path")}
+		certmagic.Default.Storage = &certmagic.FileStorage{Path: ctx.GlobalString("ssl.auto.path")}
 
-		magic := certmagic.New(certmagic.Config{
-			CA:                      ctx.GlobalString("ssl.auto.ca"),
-			Email:                   getEmail(ctx),
-			Agreed:                  ctx.GlobalBool("ssl.auto.agreed"),
-			KeyType:                 getKeyType(ctx),
-			DNSProvider:             cmProvider,
-			DisableHTTPChallenge:    true,
+		cache := certmagic.NewCache(certmagic.CacheOptions{
+			GetConfigForCert: func(cert certmagic.Certificate) (certmagic.Config, error) {
+				// do whatever you need to do to get the right
+				// configuration for this certificate; keep in
+				// mind that this config value is used as a
+				// template, and will be completed with any
+				// defaults that are set in the Default config
+				return certmagic.Config{}, nil
+			},
+		})
+
+		magic := certmagic.New(cache, certmagic.Config{
+			CA: ctx.GlobalString("ssl.auto.ca"),
+			Email: getEmail(ctx),
+			Agreed: ctx.GlobalBool("ssl.auto.agreed"),
+			KeyType: getKeyType(ctx),
+			DNSProvider: cmProvider,
+			DisableHTTPChallenge: true,
 			DisableTLSALPNChallenge: true,
 		})
 

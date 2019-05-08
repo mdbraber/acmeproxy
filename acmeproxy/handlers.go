@@ -7,12 +7,14 @@ import (
 	"os"
 	"strings"
 	"time"
+	"net"
 
 	auth "github.com/abbot/go-http-auth"
 	log "github.com/sirupsen/logrus"
-	"github.com/xenolf/lego/challenge"
-	"github.com/xenolf/lego/challenge/dns01"
+	"github.com/go-acme/lego/challenge"
+	"github.com/go-acme/lego/challenge/dns01"
 	"golang.org/x/net/context"
+	"github.com/jpillora/ipfilter"
 )
 
 const (
@@ -29,14 +31,14 @@ type providerSolved interface {
 }
 
 // message represents the JSON payload
-// See https://github.com/xenolf/lego/tree/master/providers/dns/httpreq
+// See https://github.com/go-acme/lego/tree/master/providers/dns/httpreq
 type messageDefault struct {
 	FQDN  string `json:"fqdn"`
 	Value string `json:"value"`
 }
 
 // message represents the JSON payload
-// See https://github.com/xenolf/lego/tree/master/providers/dns/httpreq
+// See https://github.com/go-acme/lego/tree/master/providers/dns/httpreq
 type messageRaw struct {
 	Domain  string `json:"domain"`
 	Token   string `json:"token"`
@@ -45,7 +47,7 @@ type messageRaw struct {
 
 // Incomingmessage represents the JSON payload of an incoming request
 // Should be either FQDN,Value or Domain,Token,KeyAuth
-// See https://github.com/xenolf/lego/tree/master/providers/dns/httpreq
+// See https://github.com/go-acme/lego/tree/master/providers/dns/httpreq
 type messageIncoming struct {
 	messageDefault
 	messageRaw
@@ -73,8 +75,15 @@ func GetHandler(config *Config) http.Handler {
 
 	// Define routes
 	mux := http.NewServeMux()
-	mux.Handle("/present", AuthenticationHandler(authenticator, (ActionHandler(ActionPresent, config))))
-	mux.Handle("/cleanup", AuthenticationHandler(authenticator, (ActionHandler(ActionCleanup, config))))
+
+	// IP filter options
+	if config.AllowedIPs != nil {
+		mux.Handle("/present", FilterHandler(AuthenticationHandler(authenticator, (ActionHandler(ActionPresent, config))), ActionPresent, config))
+		mux.Handle("/cleanup", FilterHandler(AuthenticationHandler(authenticator, (ActionHandler(ActionCleanup, config))), ActionCleanup, config))
+	} else {
+		mux.Handle("/present", AuthenticationHandler(authenticator, (ActionHandler(ActionPresent, config))))
+		mux.Handle("/cleanup", AuthenticationHandler(authenticator, (ActionHandler(ActionCleanup, config))))
+	}
 
 	// Check if we need to write an access log
 	var handler http.Handler
@@ -131,7 +140,7 @@ func ActionHandler(action string, config *Config) http.Handler {
 		incoming.Domain = dns01.UnFqdn(incoming.Domain)
 
 		// Check if we've received a message or messageRaw JSON
-		// See https://github.com/xenolf/lego/tree/master/providers/dns/httpreq
+		// See https://github.com/go-acme/lego/tree/master/providers/dns/httpreq
 		var mode string
 		var checkDomain string
 		if incoming.FQDN != "" && incoming.Value != "" {
@@ -295,6 +304,27 @@ func AuthenticationHandler(a AuthenticatorInterface, h http.Handler) http.Handle
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := a.NewContext(r.Context(), r)
 		r = r.WithContext(ctx)
+		h.ServeHTTP(w, r)
+	})
+}
+
+func FilterHandler(h http.Handler, action string, config *Config) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		//use remote addr as it cant be spoofed
+		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+		//show simple forbidden text
+		f, _ := ipfilter.New(ipfilter.Options{AllowedIPs: config.AllowedIPs, BlockByDefault: true,})
+
+		if !f.Allowed(ip) {
+			http.Error(w, "Requesting IP not in allowed-ips", http.StatusForbidden)
+			// Succes!
+			log.WithFields(log.Fields{
+				"prefix": action + ": " + r.RemoteAddr,
+				"ip": ip,
+			}).Warning("Access denied")
+			return
+		}
+		//success!
 		h.ServeHTTP(w, r)
 	})
 }
