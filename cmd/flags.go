@@ -31,7 +31,6 @@ func CreateFlags(defaultPath string) []cli.Flag {
 		}),
 		altsrc.NewStringFlag(cli.StringFlag{
 			Name:  "htpasswd-file",
-			Value: defaultPath + "/htpasswd",
 			Usage: "Htpassword file `FILE` for username/password authentication",
 		}),
 		altsrc.NewStringSliceFlag(cli.StringSliceFlag{

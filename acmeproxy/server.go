@@ -31,15 +31,11 @@ func RunServer(config *Config) {
 	if config.HttpServer.TLSConfig != nil {
 		log.WithFields(log.Fields{
 			"addr":          "https://" + config.HttpServer.Addr,
-			"htpasswdfile":  config.HtpasswdFile,
-			"accesslogfile": config.AccesslogFile,
 		}).Info("Starting acmeproxy")
 		log.Fatal(config.HttpServer.ListenAndServeTLS("", ""))
 	} else {
 		log.WithFields(log.Fields{
 			"addr":          "http://" + config.HttpServer.Addr,
-			"htpasswdfile":  config.HtpasswdFile,
-			"accesslogfile": config.AccesslogFile,
 		}).Info("Starting acmeproxy")
 		log.Fatal(config.HttpServer.ListenAndServe())
 	}

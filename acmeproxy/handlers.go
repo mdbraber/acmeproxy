@@ -68,22 +68,28 @@ type AuthenticatorInterface interface {
 }
 
 func GetHandler(config *Config) http.Handler {
-	authenticator := &auth.BasicAuth{
-		Realm:   "Basic Realm",
-		Secrets: auth.HtpasswdFileProvider(config.HtpasswdFile),
-	}
-
 	// Define routes
 	mux := http.NewServeMux()
 
-	// IP filter options
-	if config.AllowedIPs != nil {
-		mux.Handle("/present", FilterHandler(AuthenticationHandler(authenticator, (ActionHandler(ActionPresent, config))), ActionPresent, config))
-		mux.Handle("/cleanup", FilterHandler(AuthenticationHandler(authenticator, (ActionHandler(ActionCleanup, config))), ActionCleanup, config))
-	} else {
-		mux.Handle("/present", AuthenticationHandler(authenticator, (ActionHandler(ActionPresent, config))))
-		mux.Handle("/cleanup", AuthenticationHandler(authenticator, (ActionHandler(ActionCleanup, config))))
+	handlerPresent := ActionHandler(ActionPresent, config)
+	handlerCleanup := ActionHandler(ActionCleanup, config)
+
+	if len(config.HtpasswdFile) > 0 {
+		authenticator := &auth.BasicAuth{
+			Realm:   "Basic Realm",
+			Secrets: auth.HtpasswdFileProvider(config.HtpasswdFile),
+		}
+		handlerPresent = AuthenticationHandler(handlerPresent, ActionPresent, authenticator)
+		handlerCleanup = AuthenticationHandler(handlerCleanup, ActionCleanup, authenticator)
 	}
+
+	if len(config.AllowedIPs) > 0 {
+		handlerPresent = FilterHandler(handlerPresent, ActionPresent, config)
+		handlerCleanup = FilterHandler(handlerCleanup, ActionCleanup, config)
+	}
+
+	mux.Handle("/present", handlerPresent)
+	mux.Handle("/cleanup", handlerCleanup)
 
 	// Check if we need to write an access log
 	var handler http.Handler
@@ -109,15 +115,6 @@ func ActionHandler(action string, config *Config) http.Handler {
 			"prefix": action + ": " + r.RemoteAddr,
 		})
 
-		// Check authentication
-		authInfo := auth.FromContext(r.Context())
-		authInfo.UpdateHeaders(w.Header())
-		if authInfo == nil || !authInfo.Authenticated {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			alog.Error("Unauthorized request")
-			return
-		}
-		alog.WithField("username", authInfo.Username).Info("Authorized")
 
 		// Check if we're using POST
 		if r.Method != http.MethodPost {
@@ -300,10 +297,20 @@ func ActionHandler(action string, config *Config) http.Handler {
 
 }
 
-func AuthenticationHandler(a AuthenticatorInterface, h http.Handler) http.Handler {
+func AuthenticationHandler(h http.Handler, action string, a AuthenticatorInterface) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := a.NewContext(r.Context(), r)
 		r = r.WithContext(ctx)
+
+		// Check authentication
+		authInfo := auth.FromContext(r.Context())
+		authInfo.UpdateHeaders(w.Header())
+		if authInfo == nil || !authInfo.Authenticated {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			log.Warning("Unauthorized request")
+			return
+		}
+		log.WithField("username", authInfo.Username).Info("Authorized")
 		h.ServeHTTP(w, r)
 	})
 }
