@@ -1,13 +1,14 @@
 # acmeproxy
-Proxy server for ACME DNS challenges written in Go. Works with the [httpreq](https://github.com/go-acme/lego/tree/master/providers/dns/httpreq) DNS challenge provider in [lego](https://github.com/go-acme/lego).
+Proxy server for ACME DNS challenges written in Go. Works with the [httpreq](https://github.com/go-acme/lego/tree/master/providers/dns/httpreq) DNS challenge provider in [lego](https://github.com/go-acme/lego) and with the [acmeproxy](https://github.com/Neilpang/acme.sh/blob/dev/dnsapi/dns_acmeproxy.sh) provider in acme.sh (currently in the dev branch).
 
 ## Why?
 Acmeproxy was written to provide a way make it easier and safer to automatically issue per-host [Let's Encrypt](https://letsencrypt.org) SSL certificates inside a larger network with many different hosts. Especially when these hosts aren't accessible from the outside, so need to use the DNS challenges and therefore DNS API access. The regular approach would be to run an ACME client on every host, which would also mean giving each hosts access to the (full) DNS API. This is both hard to manage and a potential security risk.
 
 As a solution Acmeproxy provides the following:
-- Allow internal hosts to request ACME DNS challenges through a single host, without access to the DNS provider
+- Allow internal hosts to request ACME DNS challenges through a single host, without individual access to the DNS provider
 - Provide a single (acmeproxy) host that has access to the DNS credentials / API, limiting a possible attack surface
-- Use username/password for clients to prevent unauthorized access
+- Use username/password or IP-based filtering for clients to prevent unauthorized access
+- Use [certmagic](https://github.com/mholt/certmagic) internally to run a https intstance of acmeproxy and manage certificates (set `--ssl auto`)
 
 Acmeproxy was written to be run within an internal network, it's not recommended to expose your Acmeproxy host to the outside world. Do so at your own risk.
 
