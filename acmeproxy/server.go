@@ -2,18 +2,20 @@ package acmeproxy
 
 import (
 	"net/http"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/go-acme/lego/challenge"
+	"gopkg.in/urfave/cli.v1"
 )
 
 type Server struct {
-	HttpServer     *http.Server
-	Provider       challenge.Provider
-	HtpasswdFile   string
-	AllowedIPs     []string
-	AllowedDomains []string
-	AccesslogFile  string
+	HttpServer	*http.Server
+	Provider	challenge.Provider
+	HtpasswdFile	string
+	AllowedIPs	[]string
+	AllowedDomains	[]string
+	AccesslogFile	string
 }
 
 func NewServer(config *Config) (*Server, error) {
@@ -27,15 +29,17 @@ func NewServer(config *Config) (*Server, error) {
 	}, nil
 }
 
-func RunServer(config *Config) {
+func RunServer(ctx *cli.Context, config *Config) {
 	if config.HttpServer.TLSConfig != nil {
 		log.WithFields(log.Fields{
-			"addr":          "https://" + config.HttpServer.Addr,
+			"endpoint": "https://" + ctx.GlobalString("interface") + ":" + strconv.Itoa(ctx.GlobalInt("port")),
+			"addr":  config.HttpServer.Addr,
 		}).Info("Starting acmeproxy")
 		log.Fatal(config.HttpServer.ListenAndServeTLS("", ""))
 	} else {
 		log.WithFields(log.Fields{
-			"addr":          "http://" + config.HttpServer.Addr,
+			"endpoint": "http://" + ctx.GlobalString("interface") + ":" + strconv.Itoa(ctx.GlobalInt("port")),
+			"addr":  config.HttpServer.Addr,
 		}).Info("Starting acmeproxy")
 		log.Fatal(config.HttpServer.ListenAndServe())
 	}

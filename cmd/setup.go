@@ -122,9 +122,14 @@ func setupLogging(ctx *cli.Context) {
 
 func newHttpServer(ctx *cli.Context) *http.Server {
 
+	port := strconv.Itoa(ctx.GlobalInt("port"))
+	host, err := net.LookupHost(ctx.GlobalString("interface"))
+	if err != nil {
+		log.Fatalf("Can't find IP for interface %s - not in DNS?", ctx.GlobalString("interface"))
+	}
+
 	var server = &http.Server{
-		Addr: net.JoinHostPort(ctx.GlobalString("interface"), strconv.Itoa(ctx.GlobalInt("port"))),
-		// FIXME error checking!
+		Addr: net.JoinHostPort(host[0], port),
 	}
 
 	switch ctx.GlobalString("ssl") {

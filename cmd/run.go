@@ -7,5 +7,5 @@ import (
 
 func Run(ctx *cli.Context) {
 	config := getConfig(ctx)
-	acmeproxy.RunServer(config)
+	acmeproxy.RunServer(ctx, config)
 }
