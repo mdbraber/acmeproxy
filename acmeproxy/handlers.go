@@ -320,7 +320,7 @@ func FilterHandler(h http.Handler, action string, config *Config) http.Handler {
 		//use remote addr as it cant be spoofed
 		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 		//show simple forbidden text
-		f, _ := ipfilter.New(ipfilter.Options{AllowedIPs: config.AllowedIPs, BlockByDefault: true,})
+		f, _ := ipfilter.New(ipfilter.Options{AllowedIPs: config.AllowedIPs, BlockByDefault: true, IPDBNoFetch: true})
 
 		if !f.Allowed(ip) {
 			http.Error(w, "Requesting IP not in allowed-ips", http.StatusForbidden)
