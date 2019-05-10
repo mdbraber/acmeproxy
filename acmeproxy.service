@@ -16,7 +16,7 @@ ExecReload=/bin/kill -USR1 $MAINPID
 
 ; Use graceful shutdown with a reasonable timeout
 KillMode=mixed
-KillSignal=SIGQUIT
+KillSignal=SIGINT
 TimeoutStopSec=5s
 
 ; Use private /tmp and /var/tmp, which are discarded after caddy stops.
