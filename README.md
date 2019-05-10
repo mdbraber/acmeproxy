@@ -15,10 +15,13 @@ Acmeproxy was written to be run within an internal network, it's not recommended
 ## Background
 See the discussions for this idea in lego [here](https://github.com/go-acme/lego/pull/708)
 
+
 # Build
 Use the makefile to `make` the executables. Use `make install` to also install the executable to `/usr/local/bin`.
 
 # Configuration
+
+**WARNING**: to use acmeproxy with provider from the `lego` providers they need to implement a `CreateRecord`/`RemoveRecord` method that takes an FQDN + acme value as input. The discussion if this should be practice is on-going, see [issue 720](https://github.com/go-acme/lego/issues/720). As an example take a look at [PR #883](https://github.com/go-acme/lego/pull/883) of how this can be implemented.
 
 ## Adjust configuration file
 Copy `config.yml` to a directory (default: `/etc/acmeproxy`). See below for a configuration example using the `transip` provider. You need to specify the relevant environment variables for the provider you've chose. See the [lego](https://github.com/go-acme/lego) documentation for options per provider. Also see the examples below. If you want to provide proxies for multiple providers, start multiple instances on different hosts/ports (using different config files).
