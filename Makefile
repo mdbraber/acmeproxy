@@ -32,4 +32,6 @@ fmt:
 	gofmt -s -l -w $(SRCS)
 
 install: build
+	systemctl stop acmeproxy
 	cp dist/acmeproxy /usr/local/bin
+	systemctl start acmeproxy
