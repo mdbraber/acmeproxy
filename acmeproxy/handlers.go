@@ -14,7 +14,7 @@ import (
 	"github.com/go-acme/lego/challenge"
 	"github.com/go-acme/lego/challenge/dns01"
 	"golang.org/x/net/context"
-	"github.com/jpillora/ipfilter"
+	"github.com/orange-cloudfoundry/ipfiltering"
 )
 
 const (
@@ -317,18 +317,19 @@ func AuthenticationHandler(h http.Handler, action string, a AuthenticatorInterfa
 
 func FilterHandler(h http.Handler, action string, config *Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//use remote addr as it cant be spoofed
-		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-		//show simple forbidden text
-		f, _ := ipfilter.New(ipfilter.Options{AllowedIPs: config.AllowedIPs, BlockByDefault: true, IPDBNoFetch: true})
 
+		flog := log.WithFields(log.Fields{
+			"prefix": action + ": " + r.RemoteAddr,
+			"ip": r.RemoteAddr,
+		})
+
+		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+		f := ipfiltering.New(ipfiltering.Options{AllowedIPs: config.AllowedIPs, BlockByDefault: true, Logger: flog})
+		
 		if !f.Allowed(ip) {
 			http.Error(w, "Requesting IP not in allowed-ips", http.StatusForbidden)
 			// Succes!
-			log.WithFields(log.Fields{
-				"prefix": action + ": " + r.RemoteAddr,
-				"ip": ip,
-			}).Warning("Access denied")
+			flog.Warning("Access denied")
 			return
 		}
 		//success!
