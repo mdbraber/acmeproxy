@@ -88,6 +88,7 @@ func GetHandler(config *Config) http.Handler {
 		handlerCleanup = FilterHandler(handlerCleanup, ActionCleanup, config)
 	}
 
+	mux.Handle("/", HomeHandler())	
 	mux.Handle("/present", handlerPresent)
 	mux.Handle("/cleanup", handlerCleanup)
 
@@ -105,6 +106,15 @@ func GetHandler(config *Config) http.Handler {
 	}
 
 	return handler
+}
+
+func HomeHandler() http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "", http.StatusForbidden)
+		log.Warning("Trying to access non-acmeproxy URL")
+	})
+
 }
 
 func ActionHandler(action string, config *Config) http.Handler {
