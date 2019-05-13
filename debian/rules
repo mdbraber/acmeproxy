@@ -1,0 +1,26 @@
+#!/usr/bin/make -f
+
+VERSION := $(shell dpkg-parsechangelog -S version)
+
+DEB_HOST_ARCH   := $(DEB_TARGET_ARCH)
+DISTRIBUTION    := $(shell lsb_release -sr)
+PACKAGEVERSION  := $(VERSION)
+
+%:
+	dh_clean
+	dh $@ --with systemd
+
+override_dh_strip:
+	# don't perform dh_strip
+	echo dh_strip
+
+override_dh_auto_clean:
+override_dh_auto_test:
+override_dh_auto_build:
+override_dh_auto_install:
+	mkdir -p debian/acmeproxy/usr/bin debian/acmeproxy/etc/acmeproxy debian/acmeproxy/etc/certmagic
+	cp config.yml debian/acmeproxy/etc/acmeproxy
+	cp dist/acmeproxy debian/acmeproxy/usr/bin
+
+override_dh_gencontrol:
+	dh_gencontrol -- -v$(PACKAGEVERSION)

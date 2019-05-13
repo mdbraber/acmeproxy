@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    configure)
+        if ! getent passwd www-data > /dev/null; then
+            adduser --system --disabled-password --disabled-login --home /var/www-data \
+                    --quiet --force-badname --group www-data
+        fi
+	;;
+esac
+
+#DEBHELPER#
+
+exit 0

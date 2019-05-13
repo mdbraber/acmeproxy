@@ -1,0 +1,34 @@
+# Environment variables to be used with this provider
+#environment:
+# - "TRANSIP_ACCOUNT_NAME=mdbraber"
+# - "TRANSIP_PRIVATE_KEY_PATH=/etc/acmeproxy/transip.key"
+# - "TRANSIP_POLLING_INTERVAL=30"
+# - "TRANSIP_PROPAGATION_TIMEOUT=600"
+
+# General settings
+interface: "acmeproxy.example.com"
+port: 9096
+#provider: "transip"
+#htpasswd-file: "/etc/acmeproxy/htpasswd"
+accesslog-file: "/var/log/acmeproxy.log"
+log-level: debug
+log-timestamp: true
+log-forcecolors: true
+log-forceformatting: true
+allowed-ips:
+ - "127.0.0.1"
+ - "172.16.0.0/16"
+allowed-domains:
+ - "example.com"
+
+# Settings for the acmeproxy SSL certificate (used with this interface)
+ssl: auto
+#ssl.manual.cert-file: "/etc/lego/certificates/acmeproxy.example.com.crt"
+#ssl.manual.key-file: "/etc/lego/certificates/acmeproxy.example.com.key"
+ssl.auto.ca: "https://acme-v02.api.letsencrypt.org/directory"
+#ssl.auto.ca: "https://acme-staging-v02.api.letsencrypt.org/directory"
+ssl.auto.agreed: true
+ssl.auto.email: "johndoe@example.com"
+ssl.auto.key-type: "rsa2048"
+ssl.auto.path: "/etc/acmeproxy/certmagic"
+#ssl.auto.provider: "transip"

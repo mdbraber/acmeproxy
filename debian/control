@@ -1,0 +1,9 @@
+Source: acmeproxy
+Maintainer: Maarten den Braber <m@mdbraber.com> 
+Build-Depends: debhelper (>= 9), wget, dh-systemd, lsb-release
+
+Package: acmeproxy
+Architecture: any
+Description: Proxy server for ACME DNS challenges
+Priority: optional
+Section: web

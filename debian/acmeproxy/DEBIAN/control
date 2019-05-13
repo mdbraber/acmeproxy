@@ -1,0 +1,8 @@
+Package: acmeproxy
+Version: 0.1-1
+Architecture: amd64
+Maintainer: Maarten den Braber <m@mdbraber.com>
+Installed-Size: 41020
+Section: web
+Priority: optional
+Description: Proxy server for ACME DNS challenges
