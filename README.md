@@ -3,8 +3,6 @@ Proxy server for ACME DNS challenges written in Go.
 
 Works with the [httpreq](https://github.com/go-acme/lego/tree/master/providers/dns/httpreq) DNS challenge provider in [lego](https://github.com/go-acme/lego) and with the [acmeproxy](https://github.com/Neilpang/acme.sh/blob/dev/dnsapi/dns_acmeproxy.sh) provider in acme.sh (currently in the dev branch).
 
-**WARNING**: to use acmeproxy as backend with providers from the `lego` package they need to implement a `CreateRecord`/`RemoveRecord` method that takes an FQDN + acme value as input. The discussion if this should be practice is on-going, see [issue 720](https://github.com/go-acme/lego/issues/720). As an example take a look at [PR #883](https://github.com/go-acme/lego/pull/883) of how this was implemented for the `transip` provider (don't worry, it's not difficult).
-
 ## Why?
 Acmeproxy was written to provide a way make it easier and safer to automatically issue per-host [Let's Encrypt](https://letsencrypt.org) SSL certificates inside a larger network with many different hosts. Especially when these hosts aren't accessible from the outside, and they need to use the DNS challenges and require DNS API access.
 
@@ -23,9 +21,16 @@ Acmeproxy was written to be run within an internal network, it's not recommended
 See the discussions for this idea in lego [here](https://github.com/go-acme/lego/pull/708)
 
 # Build
-Use the makefile to `make` the executables. Use `make install` to also install the executable to `/usr/local/bin`. If you want to build a Debian package / installer, use `dch` to update the changelog and create your own package using `make debian`.
 
-# Configuration
+## Prerequisite / WARNING
+
+to use acmeproxy as backend with providers from the `lego` package they need to implement a `CreateRecord`/`RemoveRecord` method that takes an FQDN + acme value as input. The discussion if this should be practice is on-going, see [issue 720](https://github.com/go-acme/lego/issues/720). As an example take a look at [PR #883](https://github.com/go-acme/lego/pull/883) of how this was implemented for the `transip` provider (don't worry, it's not difficult).
+
+Use the makefile to `make` the executables. Use `make install` to also install the executable to `/usr/local/bin`.
+
+If you want to build a Debian package / installer, use `dch` to update the changelog and create your own package using `make debian`.
+
+# Configure
 
 ## Adjust configuration file
 Copy `config.yml` to a directory (default: `/etc/acmeproxy`). See below for a configuration example using the `transip` provider. You need to specify the relevant environment variables for the provider you've chose. See the [lego](https://github.com/go-acme/lego) documentation for options per provider. Also see the examples below. If you want to provide proxies for multiple providers, start multiple instances on different hosts/ports (using different config files).
