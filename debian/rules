@@ -20,6 +20,7 @@ override_dh_auto_build:
 override_dh_auto_install:
 	mkdir -p debian/acmeproxy/usr/bin debian/acmeproxy/etc/acmeproxy debian/acmeproxy/etc/certmagic
 	cp config.yml debian/acmeproxy/etc/acmeproxy
+	# dist/acmeproxy is the result of make build
 	cp dist/acmeproxy debian/acmeproxy/usr/bin
 
 override_dh_gencontrol:
