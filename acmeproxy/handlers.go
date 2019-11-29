@@ -11,8 +11,8 @@ import (
 
 	auth "github.com/abbot/go-http-auth"
 	log "github.com/sirupsen/logrus"
-	"github.com/go-acme/lego/challenge"
-	"github.com/go-acme/lego/challenge/dns01"
+	"github.com/go-acme/lego/v3/challenge"
+	"github.com/go-acme/lego/v3/challenge/dns01"
 	"golang.org/x/net/context"
 	"github.com/orange-cloudfoundry/ipfiltering"
 )

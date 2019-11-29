@@ -14,9 +14,9 @@ import (
 	aplog "github.com/mdbraber/acmeproxy/log"
 	"github.com/mholt/certmagic"
 	log "github.com/sirupsen/logrus"
-	"github.com/go-acme/lego/certcrypto"
-	xlog "github.com/go-acme/lego/log"
-	"github.com/go-acme/lego/providers/dns"
+	"github.com/go-acme/lego/v3/certcrypto"
+	xlog "github.com/go-acme/lego/v3/log"
+	"github.com/go-acme/lego/v3/providers/dns"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -185,7 +185,7 @@ func newHttpServer(ctx *cli.Context) *http.Server {
 			DisableTLSALPNChallenge: true,
 		})
 
-		magicErr := magic.Manage([]string{ctx.GlobalString("interface")})
+		magicErr := magic.ManageSync([]string{ctx.GlobalString("interface")})
 		if magicErr != nil {
 			salog.WithField("error", magicErr.Error()).Fatal("Problem setting up certificates for ssl.auto")
 		}

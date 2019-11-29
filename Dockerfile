@@ -1,4 +1,4 @@
-FROM golang:alpine3.8 as builder
+FROM golang:1.13.4-alpine3.10 as builder
 
 RUN apk --update upgrade \
 && apk --no-cache --no-progress add make git \

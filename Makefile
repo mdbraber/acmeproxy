@@ -13,8 +13,10 @@ VERSION := $(if $(TAG_NAME),$(TAG_NAME),$(SHA))
 default: clean checks test build
 
 clean:
-	dh_clean
 	rm -rf dist/ builds/ cover.out
+
+debian-clean:
+	dh_clean
 
 build: clean
 	@echo Version: $(VERSION)
@@ -37,5 +39,5 @@ install: build
 	cp dist/acmeproxy /usr/local/bin
 	systemctl start acmeproxy
 
-debian: build
+debian: debian-clean build
 	dpkg-buildpackage -us -uc -b --target-arch amd64
