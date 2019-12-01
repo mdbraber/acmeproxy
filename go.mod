@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/abbot/go-http-auth v0.4.0
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
+	github.com/codeskyblue/realip v0.1.0
 	github.com/go-acme/lego v2.7.2+incompatible
 	github.com/go-acme/lego/v3 v3.2.0
 	github.com/mattn/go-colorable v0.1.4 // indirect
@@ -17,3 +18,5 @@ require (
 	gopkg.in/go-acme/lego.v2 v2.7.2
 	gopkg.in/urfave/cli.v1 v1.20.0
 )
+
+replace github.com/go-acme/lego/v3 v3.2.0 => github.com/mdbraber/lego/v3 v3.0.0-20191201221443-6c59d1ecc669
