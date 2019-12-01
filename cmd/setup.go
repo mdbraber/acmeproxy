@@ -3,7 +3,7 @@ package cmd
 import (
 	"crypto/tls"
 	golog "log"
-	"net"
+	//"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -123,13 +123,14 @@ func setupLogging(ctx *cli.Context) {
 func newHttpServer(ctx *cli.Context) *http.Server {
 
 	port := strconv.Itoa(ctx.GlobalInt("port"))
-	host, err := net.LookupHost(ctx.GlobalString("interface"))
-	if err != nil {
-		log.Fatalf("Can't find IP for interface %s - not in DNS?", ctx.GlobalString("interface"))
-	}
+	//host, err := net.LookupHost(ctx.GlobalString("interface"))
+	//if err != nil {
+	//	log.Fatalf("Can't find IP for interface %s - not in DNS?", ctx.GlobalString("interface"))
+	//}
 
 	var server = &http.Server{
-		Addr: net.JoinHostPort(host[0], port),
+		//Addr: net.JoinHostPort(host[0], port),
+		Addr: ":" + port,
 	}
 
 	switch ctx.GlobalString("ssl") {

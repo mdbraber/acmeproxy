@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"time"
-	"net"
 
 	auth "github.com/abbot/go-http-auth"
 	log "github.com/sirupsen/logrus"
@@ -15,6 +14,7 @@ import (
 	"github.com/go-acme/lego/v3/challenge/dns01"
 	"golang.org/x/net/context"
 	"github.com/orange-cloudfoundry/ipfiltering"
+	"github.com/codeskyblue/realip"
 )
 
 const (
@@ -88,7 +88,7 @@ func GetHandler(config *Config) http.Handler {
 		handlerCleanup = FilterHandler(handlerCleanup, ActionCleanup, config)
 	}
 
-	mux.Handle("/", HomeHandler())	
+	mux.Handle("/", HomeHandler())
 	mux.Handle("/present", handlerPresent)
 	mux.Handle("/cleanup", handlerCleanup)
 
@@ -122,7 +122,7 @@ func ActionHandler(action string, config *Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		alog := log.WithFields(log.Fields{
-			"prefix": action + ": " + r.RemoteAddr,
+			"prefix": action + ": " + realip.FromRequest(r),
 		})
 
 
@@ -156,7 +156,7 @@ func ActionHandler(action string, config *Config) http.Handler {
 			alog.WithFields(log.Fields{
 				"fqdn":  incoming.FQDN,
 				"value": incoming.Value,
-			}).Debug("Received JSON payload")
+			}).Debug("Received JSON payload (default mode)")
 		} else if incoming.Domain != "" && (incoming.Token != "" || incoming.KeyAuth != "") {
 			mode = ModeRaw
 			checkDomain = incoming.Domain
@@ -164,7 +164,7 @@ func ActionHandler(action string, config *Config) http.Handler {
 				"domain":  incoming.Domain,
 				"token":   incoming.Token,
 				"keyAuth": incoming.KeyAuth,
-			}).Debug("Received JSON payload")
+			}).Debug("Received JSON payload (raw mode)")
 		} else {
 			http.Error(w, "Wrong JSON content", http.StatusBadRequest)
 			alog.WithField("json", incoming).Error("Wrong JSON content")
@@ -328,17 +328,16 @@ func AuthenticationHandler(h http.Handler, action string, a AuthenticatorInterfa
 func FilterHandler(h http.Handler, action string, config *Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+		ip := realip.FromRequest(r)
 		flog := log.WithFields(log.Fields{
-			"prefix": action + ": " + r.RemoteAddr,
-			"ip": r.RemoteAddr,
+			"prefix": action + ": " + ip,
+			"ip": ip,
 		})
 
-		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+		//ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 		f := ipfiltering.New(ipfiltering.Options{AllowedIPs: config.AllowedIPs, BlockByDefault: true, Logger: flog})
-		
 		if !f.Allowed(ip) {
 			http.Error(w, "Requesting IP not in allowed-ips", http.StatusForbidden)
-			// Succes!
 			flog.Warning("Access denied")
 			return
 		}
@@ -357,9 +356,9 @@ func writeAccessLog(handle http.Handler, accessLogHandle *os.File) http.HandlerF
 		statusCode := writer.status
 		length := writer.length
 		if request.URL.RawQuery != "" {
-			logger.Printf("%v %s %s \"%s %s%s%s %s\" %d %d \"%s\"", end.Format("2006/01/02 15:04:05"), request.Host, request.RemoteAddr, request.Method, request.URL.Path, "?", request.URL.RawQuery, request.Proto, statusCode, length, request.Header.Get("User-Agent"))
+			logger.Printf("%v %s %s \"%s %s%s%s %s\" %d %d \"%s\"", end.Format("2006/01/02 15:04:05"), request.Host, realip.FromRequest(request), request.Method, request.URL.Path, "?", request.URL.RawQuery, request.Proto, statusCode, length, request.Header.Get("User-Agent"))
 		} else {
-			logger.Printf("%v %s %s \"%s %s %s\" %d %d \"%s\"", end.Format("2006/01/02 15:04:05"), request.Host, request.RemoteAddr, request.Method, request.URL.Path, request.Proto, statusCode, length, request.Header.Get("User-Agent"))
+			logger.Printf("%v %s %s \"%s %s %s\" %d %d \"%s\"", end.Format("2006/01/02 15:04:05"), request.Host, realip.FromRequest(request), request.Method, request.URL.Path, request.Proto, statusCode, length, request.Header.Get("User-Agent"))
 		}
 	}
 }
