@@ -15,7 +15,10 @@ As a solution Acmeproxy provides the following:
 - Domain validation to only allow ACME DNS requests for specific domains
 - Use [certmagic](https://github.com/mholt/certmagic) internally to run a https instance of acmeproxy and manage certificates (set `--ssl auto`)
 
-Acmeproxy was written to be run within an internal network, it's not recommended to expose your Acmeproxy host to the outside world. Do so at your own risk.
+If you're looking for other ways to validate internal certificates, take a look at [autocertdelegate](https://github.com/bradfitz/autocertdelegate) which uses the tls-alpn-01 method.
+
+Acmeproxy was written to be run within an internal network, it's not recommended to expose your Acmeproxy host to the outside world. Do so at your own risk. 
+
 
 ## Background
 See the discussions for this idea in lego [here](https://github.com/go-acme/lego/pull/708)
