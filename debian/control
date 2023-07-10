@@ -1,6 +1,6 @@
 Source: acmeproxy
-Maintainer: Maarten den Braber <m@mdbraber.com> 
-Build-Depends: debhelper (>= 9), wget, dh-systemd, lsb-release
+Maintainer: Maarten den Braber <m@mdbraber.com>
+Build-Depends: debhelper (>= 9), wget, lsb-release
 
 Package: acmeproxy
 Architecture: any
