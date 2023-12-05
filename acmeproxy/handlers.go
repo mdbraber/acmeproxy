@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"io"
 
 	auth "github.com/abbot/go-http-auth"
 	log "github.com/sirupsen/logrus"
@@ -89,6 +90,7 @@ func GetHandler(config *Config) http.Handler {
 	}
 
 	mux.Handle("/", HomeHandler())
+	mux.Handle("/health", HealthHandler())
 	mux.Handle("/present", handlerPresent)
 	mux.Handle("/cleanup", handlerCleanup)
 
@@ -113,6 +115,14 @@ func HomeHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusForbidden)
 		log.Warning("Trying to access non-acmeproxy URL")
+	})
+
+}
+
+func HealthHandler() http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "OK")
 	})
 
 }
