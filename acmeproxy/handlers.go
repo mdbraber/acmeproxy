@@ -150,14 +150,18 @@ func ActionHandler(action string, config *Config) http.Handler {
 		// See https://github.com/go-acme/lego/tree/master/providers/dns/httpreq
 		var mode string
 		var checkDomain string
-		if incoming.FQDN != "" && incoming.Value != "" {
+
+		var isModeDefault = incoming.FQDN != "" && incoming.Value != ""
+		var isModeRaw = incoming.Domain != "" && (incoming.Token != "" || incoming.KeyAuth != "")
+		
+		if isModeDefault {
 			mode = ModeDefault
 			checkDomain = dns01.UnFqdn(strings.TrimPrefix(incoming.FQDN, "_acme-challenge."))
 			alog.WithFields(log.Fields{
 				"fqdn":  incoming.FQDN,
 				"value": incoming.Value,
 			}).Debug("Received JSON payload (default mode)")
-		} else if incoming.Domain != "" && (incoming.Token != "" || incoming.KeyAuth != "") {
+		} else if isModeRaw {
 			mode = ModeRaw
 			checkDomain = incoming.Domain
 			alog.WithFields(log.Fields{
@@ -195,75 +199,124 @@ func ActionHandler(action string, config *Config) http.Handler {
 
 		// Check if this provider supports the selected mode
 		// We assume that all providers support MODE_RAW (which is lego default)
-		if mode == ModeDefault {
-			provider, ok := config.Provider.(providerSolved)
-			if ok {
+		switch mode {
+			case ModeDefault:
+				provider, ok := config.Provider.(providerSolved)
+				if ok {
+					alog.WithFields(log.Fields{
+						"provider": config.ProviderName,
+						"mode":     mode,
+					}).Debug("Provider supports requested mode")
+
+					switch action {						
+						case ActionPresent:
+							err = provider.CreateRecord(incoming.FQDN, incoming.Value)
+
+						case ActionCleanup:
+							err = provider.RemoveRecord(incoming.FQDN, incoming.Value)
+
+						default:
+							alog.WithFields(log.Fields{
+								"provider": config.ProviderName,
+								"fqdn":     incoming.FQDN,
+								"value":    incoming.Value,
+								"mode":     mode,
+								"error":    err.Error(),
+							}).Error("Wrong action specified")
+							http.Error(w, "Wrong action specified", http.StatusInternalServerError)
+							return
+
+					}
+
+					if err != nil {
+						alog.WithFields(log.Fields{
+							"provider": config.ProviderName,
+							"fqdn":     incoming.FQDN,
+							"value":    incoming.Value,
+							"mode":     mode,
+							"error":    err.Error(),
+						}).Error("Failed to update TXT record")
+						http.Error(w, "Failed to update TXT record", http.StatusInternalServerError)
+						return
+					}
+				} else {
+					http.Error(w, "Provider does not support requested mode", http.StatusInternalServerError)
+					alog.WithFields(log.Fields{
+						"provider": config.ProviderName,
+						"mode":     mode,
+					}).Debug("Provider does not support requested mode")
+					return
+				}
+
+				// Send back the original JSON to confirm success
+				m := messageDefault{FQDN: incoming.FQDN, Value: incoming.Value}
+				w.Header().Set("Content-Type", "application/json")
+				returnErr := json.NewEncoder(w).Encode(m)
+				if returnErr != nil {
+					log.Error("Problem encoding return message")
+				}
+
+				// Succes!
+				alog.WithFields(log.Fields{
+					"provider": config.ProviderName,
+					"fqdn":     incoming.FQDN,
+					"value":    incoming.Value,
+					"mode":     mode,
+				}).Info("Sucessfully updated TXT record")
+				// All lego providers should support raw mode
+
+			case ModeRaw:
+				fqdn, value := dns01.GetRecord(incoming.Domain, incoming.KeyAuth)
 				alog.WithFields(log.Fields{
 					"provider": config.ProviderName,
 					"mode":     mode,
 				}).Debug("Provider supports requested mode")
+				provider := config.Provider
 
-				if action == ActionPresent {
-					err = provider.CreateRecord(incoming.FQDN, incoming.Value)
-				} else if action == ActionCleanup {
-					err = provider.RemoveRecord(incoming.FQDN, incoming.Value)
-				} else {
-					alog.WithFields(log.Fields{
-						"provider": config.ProviderName,
-						"fqdn":     incoming.FQDN,
-						"value":    incoming.Value,
-						"mode":     mode,
-						"error":    err.Error(),
-					}).Error("Wrong action specified")
-					http.Error(w, "Wrong action specified", http.StatusInternalServerError)
-					return
+				// Run action
+				switch action {
+
+					case ActionPresent:
+						err = provider.Present(incoming.Domain, incoming.Token, incoming.KeyAuth)
+
+					case ActionCleanup:
+						err = provider.CleanUp(incoming.Domain, incoming.Token, incoming.KeyAuth)
+
+					default:
+						alog.WithFields(log.Fields{
+							"provider": config.ProviderName,
+							"fqdn":     incoming.FQDN,
+							"value":    incoming.Value,
+							"mode":     mode,
+							"error":    err.Error(),
+						}).Error("Wrong action specified")
+						http.Error(w, "Wrong action specified", http.StatusInternalServerError)
+						return
 				}
 
 				if err != nil {
 					alog.WithFields(log.Fields{
 						"provider": config.ProviderName,
-						"fqdn":     incoming.FQDN,
-						"value":    incoming.Value,
+						"domain":   incoming.Domain,
+						"fqdn":     fqdn,
+						"token":    incoming.Token,
+						"keyAuth":  incoming.KeyAuth,
+						"value":    value,
 						"mode":     mode,
-						"error":    err.Error(),
 					}).Error("Failed to update TXT record")
 					http.Error(w, "Failed to update TXT record", http.StatusInternalServerError)
 					return
 				}
-			} else {
-				http.Error(w, "Provider does not support requested mode", http.StatusInternalServerError)
-				alog.WithFields(log.Fields{
-					"provider": config.ProviderName,
-					"mode":     mode,
-				}).Debug("Provider does not support requested mode")
-				return
-			}
 
-			// Send back the original JSON to confirm success
-			m := messageDefault{FQDN: incoming.FQDN, Value: incoming.Value}
-			w.Header().Set("Content-Type", "application/json")
-			returnErr := json.NewEncoder(w).Encode(m)
-			if returnErr != nil {
-				log.Error("Problem encoding return message")
-			}
+				// Send back the original JSON to confirm success
+				m := messageRaw{Domain: incoming.Domain, Token: incoming.Token, KeyAuth: incoming.KeyAuth}
+				w.Header().Set("Content-Type", "application/json")
+				returnErr := json.NewEncoder(w).Encode(m)
+				if returnErr != nil {
+					log.Error("Problem encoding return message")
+				}
 
-			// Succes!
-			alog.WithFields(log.Fields{
-				"provider": config.ProviderName,
-				"fqdn":     incoming.FQDN,
-				"value":    incoming.Value,
-				"mode":     mode,
-			}).Info("Sucessfully updated TXT record")
-			// All lego providers should support raw mode
-		} else if mode == ModeRaw {
-			fqdn, value := dns01.GetRecord(incoming.Domain, incoming.KeyAuth)
-			alog.WithFields(log.Fields{
-				"provider": config.ProviderName,
-				"mode":     mode,
-			}).Debug("Provider supports requested mode")
-			provider := config.Provider
-			err = provider.Present(incoming.Domain, incoming.Token, incoming.KeyAuth)
-			if err != nil {
+				// Success!
 				alog.WithFields(log.Fields{
 					"provider": config.ProviderName,
 					"domain":   incoming.Domain,
@@ -272,35 +325,15 @@ func ActionHandler(action string, config *Config) http.Handler {
 					"keyAuth":  incoming.KeyAuth,
 					"value":    value,
 					"mode":     mode,
-				}).Error("Failed to update TXT record")
-				http.Error(w, "Failed to update TXT record", http.StatusInternalServerError)
-				return
-			}
-			// Send back the original JSON to confirm success
-			m := messageRaw{Domain: incoming.Domain, Token: incoming.Token, KeyAuth: incoming.KeyAuth}
-			w.Header().Set("Content-Type", "application/json")
-			returnErr := json.NewEncoder(w).Encode(m)
-			if returnErr != nil {
-				log.Error("Problem encoding return message")
-			}
+				}).Info("Sucessfully updated TXT record")
 
-			// Succes!
-			alog.WithFields(log.Fields{
-				"provider": config.ProviderName,
-				"domain":   incoming.Domain,
-				"fqdn":     fqdn,
-				"token":    incoming.Token,
-				"keyAuth":  incoming.KeyAuth,
-				"value":    value,
-				"mode":     mode,
-			}).Info("Sucessfully updated TXT record")
-		} else {
-			http.Error(w, "Unkown mode requested", http.StatusInternalServerError)
-			alog.WithFields(log.Fields{
-				"provider": config.ProviderName,
-				"mode":     mode,
-			}).Info("Unknown mode requested")
-			return
+			default:
+				http.Error(w, "Unkown mode requested", http.StatusInternalServerError)
+				alog.WithFields(log.Fields{
+					"provider": config.ProviderName,
+					"mode":     mode,
+				}).Info("Unknown mode requested")
+				return
 		}
 
 	})
