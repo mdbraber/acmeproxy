@@ -33,6 +33,15 @@ Use the makefile to `make` the executables. Use `make install` to also install t
 
 If you want to build a Debian package / installer, use `dch` to update the changelog and create your own package using `make debian`.
 
+
+## Running in Docker
+An example docker-compose file is provided with a method for serving it's own ssl or sitting behind traefik
+
+- Copy docker-compose-example.yml to docker-compose.yml and adjust hostnames/settings.
+- Copy config-example.yml to config.yml and adjust your settings
+- Use docker-compose up -d to start
+- Use docker-compose logs t0 view logs
+
 # Configure
 
 ## Adjust configuration file

@@ -1,0 +1,5 @@
+certmagic/
+traefik/
+config.yml
+docker-compose.yml
+.git/

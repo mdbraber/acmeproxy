@@ -1,0 +1,66 @@
+version: '3.2'
+
+services:
+    acmeproxy:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: ACMEDNSProxy
+        restart: unless-stopped
+        network_mode: bridge
+        volumes:
+            - ./config.yml:/etc/acmeproxy/config.yml
+            - ./certmagic:/etc/acmeproxy/certmagic
+        environment: # Set variables for your dns provider here or config.yml
+            - 'CF_API_KEY=xxxxxxx'
+        ports:
+            - 9096:9096
+        # To enable traefik proxy uncomment the below and set the Host to be the domain to access acmeproxy, also comment out the ports above and comment out ssl: in config.yml
+        # This enables the labels for traefik to read and route to the container
+        # labels:
+        #     - 'traefik.enable=true'
+        #     - 'traefik.http.routers.acmeproxy.rule=Host(`acmeproxy.example.com`)'
+        #     - 'traefik.http.services.acmeproxy.loadbalancer.server.port=9096'
+        #     - 'traefik.http.routers.acmeproxy.service=acmeproxy'
+        #     - 'traefik.http.routers.acmeproxy.tls=true'
+        #     - 'traefik.http.routers.acmeproxy.tls.certresolver=letsencrypt'
+
+    # traefik:
+    #     image: traefik
+    #     container_name: traefik
+    #     restart: unless-stopped
+    #     volumes:
+    #         - ./traefik:/etc/traefik
+    #         - /var/run/docker.sock:/var/run/docker.sock
+    #     labels:
+    #         - 'traefik.enable=true'
+    #         - 'traefik.http.routers.api.rule=Host(`traefik.example.com`)' # Domain used to access traefik status panel
+    #         - 'traefik.http.routers.api.entrypoints=https'
+    #         - 'traefik.http.routers.api.service=api@internal'
+    #         - 'traefik.http.routers.api.tls=true'
+    #         - 'traefik.http.routers.api.tls.certresolver=letsencrypt'
+    #     ports:
+    #         - '80:80' # External http
+    #         - '443:443' # External https
+    #     network_mode: bridge
+    #     links:
+    #         - acmeproxy:acmeproxy
+    #     command:
+    #         - '--api'
+    #         - '--providers.docker=true'
+    #         - '--providers.docker.exposedByDefault=false'
+    #         - '--entrypoints.http=true'
+    #         - '--entrypoints.http.address=:80'
+    #         - '--entrypoints.http.http.redirections.entrypoint.to=https'
+    #         - '--entrypoints.http.http.redirections.entrypoint.scheme=https'
+    #         - '--entrypoints.https=true'
+    #         - '--entrypoints.https.address=:443'
+    #         - '--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=httpreq'
+    #         - '--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory' # Staging
+    #         # - '--certificatesresolvers.letsencrypt.acme.caserver=https://acme-v02.api.letsencrypt.org/directory' # Production
+    #         - '--log=true'
+    #         - '--log.level=DEBUG'
+    #     #      - '--accesslog'
+    #     environment:
+    #         - "HTTPREQ_ENDPOINT=http://acmeproxy:9096" #When replicating this on other servers use https://acmeproxy.example.com instead
+    #         - "HTTPREQ_MODE=RAW"
