@@ -1,3 +1,5 @@
+This project is not currently being developed and available as reference. There is a [Perl re-implementation](https://github.com/madcamel/acmeproxy.pl/) or you can take a look at the forks.
+
 # acmeproxy
 Proxy server for ACME DNS challenges written in Go.
 
