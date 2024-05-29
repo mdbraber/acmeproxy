@@ -6,3 +6,7 @@
 cover.out
 dist/
 builds/
+certmagic/
+traefik/
+docker-compose.yml
+config.yml
